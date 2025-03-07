@@ -240,7 +240,27 @@ def user_dashboard(username):
             task_type = st.selectbox("🗂️ Task Type:", ["Record", "Notes", "Assignment"])
 
            
-
+ # Font recommendation based on task type
+            if task_type == "Record":
+                recommended_fonts = [
+                    "Font_1 (Best for Handwriting)",
+                    "Font_2 (Best for Handwriting)",
+                    "Font_3 (Best for Handwriting)",
+                    "Font_11 (Best for Handwriting)"
+                ]
+            elif task_type == "Notes":
+                recommended_fonts = [
+                    "Font_4 (Best for Notes and Assignments)",
+                    "Font_5 (Best for Notes and Assignments)",
+                    "Font_6 (Best for Notes and Assignments)",
+                    "Font_7 (Best for Notes and Assignments)"
+                ]
+            else: # Assignment
+                recommended_fonts = [
+                    "Font_8 (Best for Notes and Assignments)",
+                    "Font_9 (Best for Notes and Assignments)",
+                    "Font_10 (Best for Notes and Assignments)"
+                ]
             pickup_location = st.text_input("📍 Pick-Up Location:")
             drop_location = st.text_input("📍 Drop-Off Location:")
             priority = st.radio("⚡ Priority:", ["Low", "Medium", "High"])
