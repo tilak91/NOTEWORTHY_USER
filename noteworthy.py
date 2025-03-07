@@ -317,7 +317,8 @@ def user_dashboard(username):
                 recommended_fonts = ["Font_8", "Font_9", "Font_10"]
 
             font_choice = st.selectbox("🖋️ Select Font:", recommended_fonts)
-            st.image(f"C:/Users/tilak/OneDrive/Desktop/{font_choice}.png", caption="Font Preview", use_container_width=True)
+            font_path = f"fonts/{font_choice}.png"
+            st.image(font_path, caption="Font Preview", use_container_width=True)
 
             pickup_location = st.text_input("📍 Pick-Up Location:")
             drop_location = st.text_input("📍 Drop-Off Location:")
