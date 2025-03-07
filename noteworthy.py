@@ -15,10 +15,17 @@ import pandas as pd
 import plotly.express as px
 
 # MongoDB Setup
-client = MongoClient("mongodb://localhost:27017/")
+
+CONNECTION_STRING = "mongodb+srv://NOTEWORTHY:Tilak$2004@noteworthy.fmh8b.mongodb.net/?retryWrites=true&w=majority&appName=NOTEWORTHY"
+
+# Connect to MongoDB Atlas
+client = MongoClient(CONNECTION_STRING)
+
 db = client["record_writing_app"]
 users_collection = db["users"]
 records_collection = db["records"]
+
+
 
 # Email Configuration for OTP
 EMAIL_ADDRESS = "noteworthynotes24@gmail.com"
