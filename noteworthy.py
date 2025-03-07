@@ -241,12 +241,12 @@ def user_dashboard(username):
 
            
  # Font recommendation based on task type
-            if task_type == "Record":
+           if task_type == "Record":
                 recommended_fonts = [
-                    "Font_1 (Best for Handwriting)",
-                    "Font_2 (Best for Handwriting)",
-                    "Font_3 (Best for Handwriting)",
-                    "Font_11 (Best for Handwriting)"
+                    "Font_1 (Best for Record Writing)",
+                    "Font_2 (Best for Record Writing)",
+                    "Font_3 (Best for Record Writing)",
+                    "Font_11 (Best for Record Writing)"
                 ]
             elif task_type == "Notes":
                 recommended_fonts = [
