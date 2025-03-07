@@ -1,0 +1,9 @@
+streamlit
+pymongo
+PyPDF2
+pyqrcode
+pypng
+requests
+pandas
+plotly
+streamlit-lottie
