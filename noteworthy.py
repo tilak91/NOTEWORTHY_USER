@@ -261,6 +261,7 @@ def user_dashboard(username):
                     "Font_9 (Best for Notes and Assignments)",
                     "Font_10 (Best for Notes and Assignments)"
                 ]
+            font_choice = st.selectbox("🖋️ Select Font:", recommended_fonts)
             pickup_location = st.text_input("📍 Pick-Up Location:")
             drop_location = st.text_input("📍 Drop-Off Location:")
             priority = st.radio("⚡ Priority:", ["Low", "Medium", "High"])
