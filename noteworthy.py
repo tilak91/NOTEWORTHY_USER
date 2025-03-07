@@ -418,7 +418,7 @@ def main():
             padding: 10px;
         }
         .version {
-            position: absolute;
+            position: fixed;
             top: 10px;
             right: 10px;
             font-size: 14px;
@@ -476,3 +476,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+    
