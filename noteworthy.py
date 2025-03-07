@@ -236,24 +236,10 @@ def user_dashboard(username):
             except Exception as e:
                 st.error(f"Error processing the PDF: {e}")
 
+            font_choice = st.selectbox("🖋️ Font Choice:", ["Font_1", "Font_2", "Font_3","Font_4","Font_5","Font_6","Font_7","Font_8","Font_9","Font_10","Font_11"])
             task_type = st.selectbox("🗂️ Task Type:", ["Record", "Notes", "Assignment"])
 
-            # Font recommendation based on task type
-            if task_type == "Record":
-                recommended_fonts = ["Font_1", "Font_2", "Font_3", "Font_11"]
-            elif task_type == "Notes":
-                recommended_fonts = ["Font_4", "Font_5", "Font_6", "Font_7"]
-            else: # Assignment
-                recommended_fonts = ["Font_8", "Font_9", "Font_10"]
-
-            font_choice = st.selectbox("🖋️ Select Font:", recommended_fonts)
-            font_path = load_font_image(font_choice)
-            
-            if font_path:
-                with open(font_path, "rb") as img_file:
-                    st.image(img_file, caption="Font Preview", use_container_width=True)
-            else:
-                st.error(f"Font image not found for {font_choice}")
+           
 
             pickup_location = st.text_input("📍 Pick-Up Location:")
             drop_location = st.text_input("📍 Drop-Off Location:")
@@ -476,4 +462,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-    
