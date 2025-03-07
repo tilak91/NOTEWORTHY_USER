@@ -13,6 +13,7 @@ import requests
 import base64
 import pandas as pd
 import plotly.express as px
+import os
 
 # MongoDB Setup
 
@@ -169,94 +170,23 @@ def simran_chatbot():
         # Display SIMRAN's response
         st.write(f"**SIMRAN:** {simran_response}")
 
-# Streamlit App
-def main():
-    st.set_page_config(page_title="Record Writing App", page_icon="📜", layout="wide")
+def load_font_image(font_choice):
+    # Correct relative path for Streamlit
+    font_path1 = os.path.join("fonts", f"{font_choice}.png")
+    font_path2 = os.path.join("static", f"{font_choice}.png")
 
-    # Custom CSS for enhanced UI
-    st.markdown("""
-        <style>
-        .stButton button {
-            background-color: #4CAF50;
-            color: white;
-            border-radius: 5px;
-            padding: 10px 24px;
-            font-size: 16px;
-        }
-        .stTextInput input {
-            border-radius: 5px;
-            padding: 10px;
-        }
-        .stSelectbox select {
-            border-radius: 5px;
-            padding: 10px;
-        }
-        .stFileUploader button {
-            border-radius: 5px;
-            padding: 10px;
-        }
-        .version {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            font-size: 14px;
-            color: gray;
-        }
-        </style>
-    """, unsafe_allow_html=True)
-
-    # Display version number
-    st.markdown('<div class="version">Version 1.0.1</div>', unsafe_allow_html=True)
-
-    if "username" in st.session_state:
-        user_dashboard(st.session_state["username"])
+    if os.path.exists(font_path1):
+        return font_path1
+    elif os.path.exists(font_path2):
+        return font_path2
     else:
-        page = st.sidebar.radio("📄 Navigate", ["Login", "Register"])
-
-        if page == "Login":
-            st.title("🔒 Login")
-            username = st.text_input("👤 Username:")
-            password = st.text_input("🔑 Password:", type="password")
-
-            if st.button("🔓 Login"):
-                user = authenticate_user(username, password)
-                if user:
-                    st.session_state["username"] = username
-                    st.success("✅ Login Successful!")
-                    st.balloons()
-                else:
-                    st.error("❌ Invalid username or password.")
-
-        elif page == "Register":
-            st.title("🔑 Register")
-            username = st.text_input("👤 Username:")
-            password = st.text_input("🔒 Password:", type="password")
-            email = st.text_input("📧 Email:")
-
-            if st.button("🎉 Register"):
-                if users_collection.find_one({"username": username}):
-                    st.error("❌ Username already exists.")
-                else:
-                    hashed_password = hash_password(password)
-                    users_collection.insert_one({"username": username, "password": hashed_password, "email": email})
-                    otp = send_otp(email)
-                    st.session_state["otp"] = otp
-                    st.session_state["username"] = username
-                    st.session_state["password"] = password
-                    st.success("✅ OTP sent to your email.")
-                    otp_input = st.text_input("🔢 Enter OTP:")
-                    if st.button("🔓 Verify OTP"):
-                        if str(st.session_state["otp"]) == otp_input:
-                            st.success("🎉 Registration Successful!")
-                            st.balloons()
-                        else:
-                            st.error("❌ Invalid OTP. Please try again.")
+        return None
 
 def user_dashboard(username):
     st.title(f"👋 Welcome {username}!")
 
     # Tabs for navigation
-    tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, = st.tabs([
+    tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs([
         "📤 Submit Task", 
         "📜 Your Orders", 
         "🤖 Chatbot", 
@@ -317,8 +247,13 @@ def user_dashboard(username):
                 recommended_fonts = ["Font_8", "Font_9", "Font_10"]
 
             font_choice = st.selectbox("🖋️ Select Font:", recommended_fonts)
-            font_path = f"fonts/{font_choice}.png"
-            st.image(font_path, caption="Font Preview", use_container_width=True)
+            font_path = load_font_image(font_choice)
+            
+            if font_path:
+                with open(font_path, "rb") as img_file:
+                    st.image(img_file, caption="Font Preview", use_container_width=True)
+            else:
+                st.error(f"Font image not found for {font_choice}")
 
             pickup_location = st.text_input("📍 Pick-Up Location:")
             drop_location = st.text_input("📍 Drop-Off Location:")
@@ -456,6 +391,88 @@ def user_dashboard(username):
         st.write("It's under development!")
         st.write("Check back soon for updates.")
         # Add your spending analytics logic here
+
+def main():
+    st.set_page_config(page_title="Record Writing App", page_icon="📜", layout="wide")
+
+    # Custom CSS for enhanced UI
+    st.markdown("""
+        <style>
+        .stButton button {
+            background-color: #4CAF50;
+            color: white;
+            border-radius: 5px;
+            padding: 10px 24px;
+            font-size: 16px;
+        }
+        .stTextInput input {
+            border-radius: 5px;
+            padding: 10px;
+        }
+        .stSelectbox select {
+            border-radius: 5px;
+            padding: 10px;
+        }
+        .stFileUploader button {
+            border-radius: 5px;
+            padding: 10px;
+        }
+        .version {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 14px;
+            color: gray;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+
+    # Display version number
+    st.markdown('<div class="version">Version 1.0.1</div>', unsafe_allow_html=True)
+
+    if "username" in st.session_state:
+        user_dashboard(st.session_state["username"])
+    else:
+        page = st.sidebar.radio("📄 Navigate", ["Login", "Register"])
+
+        if page == "Login":
+            st.title("🔒 Login")
+            username = st.text_input("👤 Username:")
+            password = st.text_input("🔑 Password:", type="password")
+
+            if st.button("🔓 Login"):
+                user = authenticate_user(username, password)
+                if user:
+                    st.session_state["username"] = username
+                    st.success("✅ Login Successful!")
+                    st.balloons()
+                else:
+                    st.error("❌ Invalid username or password.")
+
+        elif page == "Register":
+            st.title("🔑 Register")
+            username = st.text_input("👤 Username:")
+            password = st.text_input("🔒 Password:", type="password")
+            email = st.text_input("📧 Email:")
+
+            if st.button("🎉 Register"):
+                if users_collection.find_one({"username": username}):
+                    st.error("❌ Username already exists.")
+                else:
+                    hashed_password = hash_password(password)
+                    users_collection.insert_one({"username": username, "password": hashed_password, "email": email})
+                    otp = send_otp(email)
+                    st.session_state["otp"] = otp
+                    st.session_state["username"] = username
+                    st.session_state["password"] = password
+                    st.success("✅ OTP sent to your email.")
+                    otp_input = st.text_input("🔢 Enter OTP:")
+                    if st.button("🔓 Verify OTP"):
+                        if str(st.session_state["otp"]) == otp_input:
+                            st.success("🎉 Registration Successful!")
+                            st.balloons()
+                        else:
+                            st.error("❌ Invalid OTP. Please try again.")
 
 if __name__ == "__main__":
     main()
