@@ -7,26 +7,28 @@ from pymongo import MongoClient
 from PyPDF2 import PdfReader
 import tempfile
 import pyqrcode
+import cloudinary
+import cloudinary.uploader
+import cloudinary.api
 from streamlit_lottie import st_lottie
 import json
 import requests
 import base64
-import pandas as pd
-import plotly.express as px
-import os
 
-# MongoDB Setup
-
-CONNECTION_STRING = "mongodb+srv://NOTEWORTHY:Tilak$2004@noteworthy.fmh8b.mongodb.net/?retryWrites=true&w=majority&appName=NOTEWORTHY"
+# Cloudinary Configuration
+cloudinary.config( 
+  cloud_name = "diygmx9rw", 
+  api_key = "745417516628925", 
+  api_secret = "oQPdx9N09BGfF6nCWobM9BQoMCs" 
+)
 
 # Connect to MongoDB Atlas
+CONNECTION_STRING = "mongodb+srv://NOTEWORTHY:Tilak$2004@noteworthy.fmh8b.mongodb.net/?retryWrites=true&w=majority&appName=NOTEWORTHY"
 client = MongoClient(CONNECTION_STRING)
 
 db = client["record_writing_app"]
 users_collection = db["users"]
 records_collection = db["records"]
-
-
 
 # Email Configuration for OTP
 EMAIL_ADDRESS = "noteworthynotes24@gmail.com"
@@ -48,8 +50,6 @@ responses = {
     "greeting": [
         "Hello! How can I assist you today?",
         "Hi there! What can I help you with?",
-        "Hey! How are you doing today?",
-        "Hi! I'm here to help. What's on your mind?",
         "Hey! How can I be of service?"
     ],
     "task_submission": [
@@ -70,7 +70,6 @@ responses = {
     "default": [
         "I'm sorry, I didn't quite understand that. Could you please rephrase your question?",
         "Could you clarify your request? I didn't catch that.",
-        "I'm still learning! Can you provide more details so I can assist you better?",
         "I'm not sure about that, but I'll try to assist you. Could you rephrase?"
     ]
 }
@@ -98,6 +97,18 @@ def generate_upi_qr_code(upi_id, amount):
     temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".png")
     qr_code.png(temp_file.name, scale=8)
     return temp_file.name
+
+def upload_to_cloudinary(file):
+    try:
+        response = cloudinary.uploader.upload(
+            file,
+            folder="record_writing_app",
+            resource_type="auto"
+        )
+        return response['secure_url']
+    except Exception as e:
+        st.error(f"Error uploading file: {e}")
+        return None
 
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
@@ -170,32 +181,84 @@ def simran_chatbot():
         # Display SIMRAN's response
         st.write(f"**SIMRAN:** {simran_response}")
 
-def load_font_image(font_choice):
-    # Correct relative path for Streamlit
-    font_path1 = os.path.join("fonts", f"{font_choice}.png")
-    font_path2 = os.path.join("static", f"{font_choice}.png")
+# Streamlit App
+def main():
+    st.set_page_config(page_title="Record Writing App", page_icon="📜", layout="wide")
 
-    if os.path.exists(font_path1):
-        return font_path1
-    elif os.path.exists(font_path2):
-        return font_path2
+    # Custom CSS for enhanced UI
+    st.markdown("""
+        <style>
+        .stButton button {
+            background-color: #4CAF50;
+            color: white;
+            border-radius: 5px;
+            padding: 10px 24px;
+            font-size: 16px;
+        }
+        .stTextInput input {
+            border-radius: 5px;
+            padding: 10px;
+        }
+        .stSelectbox select {
+            border-radius: 5px;
+            padding: 10px;
+        }
+        .stFileUploader button {
+            border-radius: 5px;
+            padding: 10px;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+
+    if "username" in st.session_state:
+        user_dashboard(st.session_state["username"])
     else:
-        return None
+        page = st.sidebar.radio("📄 Navigate", ["Login", "Register"])
+
+        if page == "Login":
+            st.title("🔒 Login")
+            username = st.text_input("👤 Username:")
+            password = st.text_input("🔑 Password:", type="password")
+
+            if st.button("🔓 Login"):
+                user = authenticate_user(username, password)
+                if user:
+                    st.session_state["username"] = username
+                    st.success("✅ Login Successful!")
+                    st.balloons()
+                else:
+                    st.error("❌ Invalid username or password.")
+
+        elif page == "Register":
+            st.title("🔑 Register")
+            username = st.text_input("👤 Username:")
+            password = st.text_input("🔒 Password:", type="password")
+            email = st.text_input("📧 Email:")
+
+            if st.button("🎉 Register"):
+                if users_collection.find_one({"username": username}):
+                    st.error("❌ Username already exists.")
+                else:
+                    hashed_password = hash_password(password)
+                    users_collection.insert_one({"username": username, "password": hashed_password, "email": email})
+                    otp = send_otp(email)
+                    st.session_state["otp"] = otp
+                    st.session_state["username"] = username
+                    st.session_state["password"] = password
+                    st.success("✅ OTP sent to your email.")
+                    otp_input = st.text_input("🔢 Enter OTP:")
+                    if st.button("🔓 Verify OTP"):
+                        if str(st.session_state["otp"]) == otp_input:
+                            st.success("🎉 Registration Successful!")
+                            st.balloons()
+                        else:
+                            st.error("❌ Invalid OTP. Please try again.")
 
 def user_dashboard(username):
     st.title(f"👋 Welcome {username}!")
 
     # Tabs for navigation
-    tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs([
-        "📤 Submit Task", 
-        "📜 Your Orders", 
-        "🤖 Chatbot", 
-        "⚙️ Settings", 
-        "⭐ Rate Your Order", 
-        "🎁 Seasonal Offers", 
-        "📦 Bulk Order Discounts", 
-        "📊 Spending Analytics"
-    ])
+    tab1, tab2, tab3, tab4, tab5 = st.tabs(["📤 Submit Task", "📜 Your Orders", "🤖 Chatbot", "⚙️ Settings", "⭐ Rate Your Order"])
 
     # Submit Task Tab
     with tab1:
@@ -203,10 +266,23 @@ def user_dashboard(username):
         st_lottie(lottie_upload, height=200, key="upload_animation")
         uploaded_file = st.file_uploader("📄 Upload your PDF", type="pdf")
         num_pages = 0
+        cloudinary_url = None
 
         if uploaded_file is not None:
-            # PDF Preview Section
-            st.subheader("PDF Preview")
+            # Upload to Cloudinary
+            cloudinary_url = upload_to_cloudinary(uploaded_file.getvalue())
+            
+            if cloudinary_url:
+                st.success("📃 PDF uploaded successfully to secure cloud storage!")
+                try:
+                    num_pages = get_pdf_page_count(uploaded_file)
+                    st.write(f"📃 Number of Pages: {num_pages}")
+                except Exception as e:
+                    st.error(f"Error processing the PDF: {e}")
+
+                # PDF Preview
+                st.write("📄 PDF Preview:")
+                st.markdown(f"[View PDF in Cloud Storage]({cloudinary_url})")
             
             # Show PDF in browser
             base64_pdf = base64.b64encode(uploaded_file.read()).decode('utf-8')
@@ -236,32 +312,11 @@ def user_dashboard(username):
             except Exception as e:
                 st.error(f"Error processing the PDF: {e}")
 
-            font_choice = st.selectbox("🖋️ Font Choice:", ["Font_1", "Font_2", "Font_3","Font_4","Font_5","Font_6","Font_7","Font_8","Font_9","Font_10","Font_11"])
-            task_type = st.selectbox("🗂️ Task Type:", ["Record", "Notes", "Assignment"])
+            font_options = ["Font_1", "Font_2", "Font_3"]
+            font_choice = st.selectbox("🖋️ Select Font:", font_options)
+            st.image(f"C:/Users/tilak/OneDrive/Desktop/{font_choice}.png", caption="Font Preview", use_container_width=True)
 
-           
- # Font recommendation based on task type
-            if task_type == "Record":
-                recommended_fonts = [
-                    "Font_1 (Best for Record Writing)",
-                    "Font_2 (Best for Record Writing)",
-                    "Font_3 (Best for Record Writing)",
-                    "Font_11 (Best for Record Writing)"
-                ]
-            elif task_type == "Notes":
-                recommended_fonts = [
-                    "Font_4 (Best for Notes and Assignments)",
-                    "Font_5 (Best for Notes and Assignments)",
-                    "Font_6 (Best for Notes and Assignments)",
-                    "Font_7 (Best for Notes and Assignments)"
-                ]
-            else: # Assignment
-                recommended_fonts = [
-                    "Font_8 (Best for Notes and Assignments)",
-                    "Font_9 (Best for Notes and Assignments)",
-                    "Font_10 (Best for Notes and Assignments)"
-                ]
-            font_choice = st.selectbox("🖋️ Select Font:", recommended_fonts)
+            task_type = st.selectbox("🗂️ Task Type:", ["Record", "Note", "Assignment"])
             pickup_location = st.text_input("📍 Pick-Up Location:")
             drop_location = st.text_input("📍 Drop-Off Location:")
             priority = st.radio("⚡ Priority:", ["Low", "Medium", "High"])
@@ -306,7 +361,6 @@ def user_dashboard(username):
     # Your Orders Tab
     with tab2:
         st.header("📜 Your Orders")
-        st.write("✨ Kindly send the screenshot of the payment on WhatsApp to 📲 9182330751. Thank you! 😊")
         orders = records_collection.find({"username": username})
 
         for order in orders:
@@ -379,107 +433,6 @@ def user_dashboard(username):
                     st.warning("⚠️ You can only rate completed orders.")
         else:
             st.info("ℹ️ No orders found.")
-
-    # Seasonal Offers Tab
-    with tab6:
-        st.header("🎁 Seasonal Offers")
-        st.write("Check out our special offers during exam periods!")
-
-    # Bulk Order Discounts Tab
-    with tab7:
-        st.header("📦 Bulk Order Discounts")
-        st.write("Get discounts on bulk orders!")
-        # Add your bulk order discounts logic here
-
-    # Spending Analytics Tab
-    with tab8:
-        st.header("📊 Spending Analytics")
-        st.write("Analyze your spending patterns and get insights.")
-        st.write("It's under development!")
-        st.write("Check back soon for updates.")
-        # Add your spending analytics logic here
-
-def main():
-    st.set_page_config(page_title="Record Writing App", page_icon="📜", layout="wide")
-
-    # Custom CSS for enhanced UI
-    st.markdown("""
-        <style>
-        .stButton button {
-            background-color: #4CAF50;
-            color: white;
-            border-radius: 5px;
-            padding: 10px 24px;
-            font-size: 16px;
-        }
-        .stTextInput input {
-            border-radius: 5px;
-            padding: 10px;
-        }
-        .stSelectbox select {
-            border-radius: 5px;
-            padding: 10px;
-        }
-        .stFileUploader button {
-            border-radius: 5px;
-            padding: 10px;
-        }
-        .version {
-            position: fixed;
-            top: 10px;
-            right: 10px;
-            font-size: 14px;
-            color: gray;
-        }
-        </style>
-    """, unsafe_allow_html=True)
-
-    # Display version number
-    st.markdown('<div class="version">Version 1.0.1</div>', unsafe_allow_html=True)
-
-    if "username" in st.session_state:
-        user_dashboard(st.session_state["username"])
-    else:
-        page = st.sidebar.radio("📄 Navigate", ["Login", "Register"])
-
-        if page == "Login":
-            st.title("🔒 Login")
-            username = st.text_input("👤 Username:")
-            password = st.text_input("🔑 Password:", type="password")
-
-            if st.button("🔓 Login"):
-                user = authenticate_user(username, password)
-                if user:
-                    st.session_state["username"] = username
-                    st.success("✅ Login Successful!")
-                    st.balloons()
-                else:
-                    st.error("❌ Invalid username or password.")
-
-        elif page == "Register":
-            st.title("🔑 Register")
-            username = st.text_input("👤 Username:")
-            password = st.text_input("🔒 Password:", type="password")
-            email = st.text_input("📧 Email:")
-
-            if st.button("🎉 Register"):
-                if users_collection.find_one({"username": username}):
-                    st.error("❌ Username already exists.")
-                else:
-                    hashed_password = hash_password(password)
-                    users_collection.insert_one({"username": username, "password": hashed_password, "email": email})
-                    otp = send_otp(email)
-                    st.session_state["otp"] = otp
-                    st.session_state["username"] = username
-                    st.session_state["password"] = password
-                    st.success("✅ OTP sent to your email.")
-                    otp_input = st.text_input("🔢 Enter OTP:")
-                    if st.button("🔓 Verify OTP"):
-                        if str(st.session_state["otp"]) == otp_input:
-                            st.success("🎉 Registration Successful!")
-                            st.balloons()
-                        else:
-                            st.error("❌ Invalid OTP. Please try again.")
 
 if __name__ == "__main__":
     main()
